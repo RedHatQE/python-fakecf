@@ -26,11 +26,11 @@ class FakeCFEvent(object):
 class FakeCF(object):
     ''' CloudFormation emulator '''
 
-    def __init__(self, aws_access_key_id, aws_secter_access_key, region):
+    def __init__(self, aws_access_key_id, aws_secret_access_key, region):
         self.aws_access_key_id = aws_access_key_id
-        self.aws_secter_access_key = aws_secter_access_key
+        self.aws_secret_access_key = aws_secret_access_key
         self.region = region
-        self.conn = connect_to_region(region, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secter_access_key)
+        self.conn = connect_to_region(region, aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
         if not self.conn:
             raise FakeCF_Exception("Failed to connect to EC2 region %s with provided credentials" % region)
         self.stacks = {}
