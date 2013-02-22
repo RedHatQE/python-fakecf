@@ -4,7 +4,7 @@ from setuptools import setup
 import glob
 
 setup(name='fakecf',
-    version='0.1',
+    version='0.2',
     description='Python library to emulate CloudForamtion stuff when it is not accessible',
     author='Vitaly Kuznetsov',
     author_email='vitty@redhat.com',

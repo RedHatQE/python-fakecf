@@ -1,6 +1,6 @@
 Name:		python-fakecf
-Version:	0.1
-Release:	0%{?dist}
+Version:	0.2
+Release:	1%{?dist}
 Summary:	Python library to emulate CloudForamtion stuff when it is not accessible
 
 Group:		Development/Python
@@ -33,4 +33,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/fakecf
 
 %changelog
+* Fri Feb 22 2013 Vitaly Kuznetsov <vitty@redhat.com> 0.2-1
+- new package built with tito
+
 
