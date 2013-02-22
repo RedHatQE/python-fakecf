@@ -37,6 +37,18 @@ class FakeCF(object):
         self.events = {}
         self.resources = {}
 
+    def describe_stack_resources(self, stack_id):
+        if stack_id in self.resources:
+            return self.resources[stack_id][:]
+        else:
+            raise FakeCF_Exception("Failed to get stack with id %s for describing resources" % stack_id)
+
+    def describe_stack_events(self, stack_id):
+        if stack_id in self.events:
+            return self.events[stack_id][:]
+        else:
+            raise FakeCF_Exception("Failed to get stack with id %s for describing events" % stack_id)
+
     def create_stack(self, stack_id, template_body, parameters=[], timeout_in_minutes=10):
         self.stacks[stack_id] = {}
         self.events[stack_id] = []
