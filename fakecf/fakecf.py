@@ -225,7 +225,7 @@ class FakeCF(object):
                 security_groups = params["Properties"]["SecurityGroups"]
             security_group_ids = None
             if 'SecurityGroupIds' in params["Properties"]:
-                security_group_ids = params["Properties"]["SecurityGroupIds"]
+                security_group_ids = self._find_sg_ids(params["Properties"]["SecurityGroupIds"])
             reservation = self.conn.run_instances(image_id,
                                                  key_name=key_name,
                                                  security_groups=security_groups,
@@ -239,3 +239,13 @@ class FakeCF(object):
             raise FakeCF_Exception("Creating Instance %s failed: %s" % (name, e))
         logging.info("Instance %s created!" % name)
         return reservation
+
+    def _find_sg_ids(self, namelist):
+        result = []
+        for sg in self.conn.get_all_security_groups():
+            if sg.name in namelist or sg.id in namelist:
+                result.append(sg.id)
+        if len(result) != len(namelist):
+            raise FakeCF_Exception("Failed to locate requires VPC groups: %s" % namelist)
+        return result
+
