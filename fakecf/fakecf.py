@@ -195,7 +195,10 @@ class FakeCF(object):
                 description = params["Properties"]["GroupDescription"]
             else:
                 description = name
-            sg = self.conn.create_security_group(name, description)
+            vpc_id = None
+            if 'VpcId' in params["Properties"]:
+                vpc_id = params["Properties"]["VpcId"]
+            sg = self.conn.create_security_group(name, description, vpc_id=vpc_id)
             if 'SecurityGroupIngress' in params["Properties"]:
                 for rule in params["Properties"]["SecurityGroupIngress"]:
                     sg.authorize(rule['IpProtocol'], rule['FromPort'], rule['ToPort'], rule['CidrIp'])
@@ -220,11 +223,15 @@ class FakeCF(object):
             security_groups = None
             if 'SecurityGroups' in params["Properties"]:
                 security_groups = params["Properties"]["SecurityGroups"]
+            security_group_ids = None
+            if 'SecurityGroupIds' in params["Properties"]:
+                security_group_ids = params["Properties"]["SecurityGroupIds"]
             reservation = self.conn.run_instances(image_id,
                                                  key_name=key_name,
                                                  security_groups=security_groups,
                                                  instance_type=instance_type,
-                                                 subnet_id=subnet_id)
+                                                 subnet_id=subnet_id,
+                                                 security_group_ids=security_group_ids)
             if 'Tags' in params["Properties"]:
                 for tag in params["Properties"]["Tags"]:
                     reservation.instances[0].add_tag(tag["Key"], tag["Value"])
