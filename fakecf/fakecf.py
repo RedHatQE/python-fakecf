@@ -388,6 +388,7 @@ class FakeCF(object):
             sg = self.conn.create_security_group(name,
                                                  description,
                                                  vpc_id=vpc_id)
+            time.sleep(3)
             if 'SecurityGroupIngress' in params['Properties']:
                 for rule in params['Properties']['SecurityGroupIngress']:
                     sg.authorize(rule['IpProtocol'],
@@ -438,6 +439,7 @@ class FakeCF(object):
                                                  instance_type=instance_type,
                                                  subnet_id=subnet_id,
                                                  security_group_ids=security_group_ids)
+            time.sleep(3)
             if 'Tags' in params['Properties']:
                 for tag in params['Properties']['Tags']:
                     reservation.instances[0].add_tag(tag['Key'], tag['Value'])
