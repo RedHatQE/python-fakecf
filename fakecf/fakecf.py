@@ -1,4 +1,6 @@
-from boto.ec2 import *
+""" Dumb CloudFormation emulator """
+
+from boto import ec2
 import json
 import logging
 import string
@@ -53,9 +55,9 @@ class FakeCF(object):
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         self.region = region
-        self.conn = connect_to_region(region,
-                                      aws_access_key_id=aws_access_key_id,
-                                      aws_secret_access_key=aws_secret_access_key)
+        self.conn = ec2.connect_to_region(region,
+                                          aws_access_key_id=aws_access_key_id,
+                                          aws_secret_access_key=aws_secret_access_key)
         if not self.conn:
             raise FakeCF_Exception('Failed to connect to EC2 region %s with provided credentials'
                                    % region)
@@ -160,7 +162,6 @@ class FakeCF(object):
                 waitlist.append(reservation)
 
         waitstart = time.time()
-        result = {}
         for reservation in waitlist:
             while reservation.instances[0].update() == 'pending':
                 if time.time() - waitstart > 60 * timeout_in_minutes:
@@ -209,7 +210,7 @@ class FakeCF(object):
 
         @raises FakeCF_Exception
         """
-        logging.debug('Calc%i: %s' % (level, token))
+        logging.debug('Calc%i: %s', level, token)
         result = None
         if type(token) == str or type(token) == unicode:
             result = token
@@ -243,7 +244,7 @@ class FakeCF(object):
                     result = self._fn_GetAtt(stack_id, token[key], level + 1)
                 else:
                     result = {key: self._calc_(stack_id, token[key], level + 1)}
-        logging.debug('Calc%i result: %s' % (level, result))
+        logging.debug('Calc%i result: %s', level, result)
         return result
 
     def _Ref(self, stack_id, param, level):
@@ -264,7 +265,7 @@ class FakeCF(object):
 
         @raises FakeCF_Exception
         """
-        logging.debug('Ref%i: %s' % (level, param))
+        logging.debug('Ref%i: %s', level, param)
         if not 'Parameters' in self.stacks[stack_id]['json_def']:
             raise FakeCF_Exception('No parameters in JSON, %s queried' % param)
         if param in self.stacks[stack_id]['json_def']['Parameters']:
@@ -275,7 +276,7 @@ class FakeCF(object):
             result = self._gen_resource_name(stack_id, param)
         elif param == 'AWS::Region':
             result = self.region
-        logging.debug('Ref%i result: %s' % (level, result))
+        logging.debug('Ref%i result: %s', level, result)
         return result
 
     def _fn_FindInMap(self, stack_id, params, level):
@@ -296,7 +297,7 @@ class FakeCF(object):
 
         @raises FakeCF_Exception
         """
-        logging.debug('FindInMap%i: %s' % (level, params))
+        logging.debug('FindInMap%i: %s', level, params)
         if type(params) != list or len(params) != 3:
             raise FakeCF_Exception('Wrong parameter for fn::FindInMap: %s' % params)
         param_map = params[0]
@@ -312,9 +313,9 @@ class FakeCF(object):
             raise FakeCF_Exception('No %s in %s' % (param_arg, param_map))
         required_val = required_map[param_arg]
         if type(required_val) != dict or not param_ret in required_val:
-            raise FakeCF_Exception('No %s in %s' % (param_ret, param_val))
+            raise FakeCF_Exception('No %s in %s' % (param_ret, required_val))
         result = required_val[param_ret]
-        logging.debug('FindInMap%i result: %s' % (level, result))
+        logging.debug('FindInMap%i result: %s', level, result)
         return result
 
     def _fn_Join(self, stack_id, params, level):
@@ -335,15 +336,16 @@ class FakeCF(object):
 
         @raises FakeCF_Exception
         """
-        logging.debug('Join%i: %s' % (level, params))
+        logging.debug('Join%i: %s', level, params)
         if type(params) != list or len(params) < 2:
             raise FakeCF_Exception('Wrong parameter for fn::Join: %s' % params)
         delim = self._calc_(stack_id, params[0], level + 1)
         result = delim.join(self._calc_(stack_id, x, level + 1) for x in params[1])
-        logging.debug('Join result%i: %s' % (level, result))
+        logging.debug('Join result%i: %s', level, result)
         return result
 
-    def _fn_GetAtt(self, stack_id, params, level):
+    @staticmethod
+    def _fn_GetAtt(stack_id, params, level):
         """
         Calculate fn_GetAtt function (internal)
 
@@ -362,6 +364,7 @@ class FakeCF(object):
         @raises FakeCF_Exception
         """
         raise FakeCF_Exception('Not implemented')
+        return None
 
     def _create_sg(self, name, params):
         """
@@ -376,7 +379,7 @@ class FakeCF(object):
         @raises FakeCF_Exception
         """
 
-        logging.debug('Creating Security group %s: %s' % (name, params))
+        logging.debug('Creating Security group %s: %s', name, params)
         try:
             if 'GroupDescription' in params['Properties']:
                 description = params['Properties']['GroupDescription']
@@ -385,19 +388,19 @@ class FakeCF(object):
             vpc_id = None
             if 'VpcId' in params['Properties']:
                 vpc_id = params['Properties']['VpcId']
-            sg = self.conn.create_security_group(name,
-                                                 description,
-                                                 vpc_id=vpc_id)
+            sgroup = self.conn.create_security_group(name,
+                                                     description,
+                                                     vpc_id=vpc_id)
             time.sleep(3)
             if 'SecurityGroupIngress' in params['Properties']:
                 for rule in params['Properties']['SecurityGroupIngress']:
-                    sg.authorize(rule['IpProtocol'],
-                                 rule['FromPort'],
-                                 rule['ToPort'],
-                                 rule['CidrIp'])
+                    sgroup.authorize(rule['IpProtocol'],
+                                     rule['FromPort'],
+                                     rule['ToPort'],
+                                     rule['CidrIp'])
         except:
             raise FakeCF_Exception('Creating Security group %s failed!' % name)
-        logging.info('Security group %s created!' % name)
+        logging.info('Security group %s created!', name)
 
     def _create_instance(self, name, params):
         """
@@ -414,7 +417,7 @@ class FakeCF(object):
 
         @raises FakeCF_Exception
         """
-        logging.debug('Creating Instance %s: %s' % (name, params))
+        logging.debug('Creating Instance %s: %s', name, params)
         reservation = None
         try:
             image_id = params['Properties']['ImageId']
@@ -443,10 +446,10 @@ class FakeCF(object):
             if 'Tags' in params['Properties']:
                 for tag in params['Properties']['Tags']:
                     reservation.instances[0].add_tag(tag['Key'], tag['Value'])
-        except Exception, e:
+        except Exception, err:
             raise FakeCF_Exception('Creating Instance %s failed: %s'
-                                   % (name, e))
-        logging.info('Instance %s created!' % name)
+                                   % (name, err))
+        logging.info('Instance %s created!', name)
         return reservation
 
     def _find_sg_ids(self, namelist):
@@ -462,10 +465,12 @@ class FakeCF(object):
         @raises FakeCF_Exception
         """
         result = []
-        for sg in self.conn.get_all_security_groups():
-            if sg.name in namelist or sg.id in namelist:
-                result.append(sg.id)
+        for sgroup in self.conn.get_all_security_groups():
+            if sgroup.name in namelist or sgroup.id in namelist:
+                result.append(sgroup.id)
         if len(result) != len(namelist):
             raise FakeCF_Exception('Failed to locate requires VPC groups: %s'
                                    % namelist)
         return result
+
+__all__ = ['FakeCF', 'FakeCFEvent', 'FakeCFResource', 'FakeCF_Exception']
